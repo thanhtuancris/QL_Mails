@@ -222,25 +222,25 @@ module.exports = {
                     filter.mail = new RegExp(req.body.mail.trim(), 'i');
                 }
                 if (req.body.start_date && req.body.stop_date) {
-                    let date = new Date();
-                    console.log("date= " + date);
-                    var d = new Date(date),
-                        month = '' + (d.getMonth() + 1),
-                        day = '' + d.getDate(),
-                        year = d.getFullYear();
-                    let dateNow = year + "-" + month + "-" + day + " 00:00";
-                    console.log("dateNow= " + dateNow);
-                    let start_date = new Date(dateNow);
-                    start_date.setDate(start_date.getDate() - req.body.start_date);
-                    console.log("startDate= " + start_date);
-                    let stop_date = new Date(dateNow);
-                    stop_date.setDate(stop_date.getDate() - req.body.stop_date);
-                    console.log("stopDate= " + stop_date);
+                    let start_date = new Date(req.body.start_date + " 07:00")
+                    let stop_date = new Date(req.body.stop_date + " 07:00")
                     filter.date_import = {
-                        "$gte": stop_date.toISOString(),
-                        "$lte": start_date.toISOString()
-                    };
+                        "$gte": start_date,
+                        "$lte": stop_date
+                    }
                 }
+                // if(req.body.start_date){
+                //     let start_date = new Date(req.body.start_date + " 07:00")
+                //     filter.date_import = {
+                //         "$gte": start_date,
+                //     }
+                // }
+                // if(req.body.stop_date){
+                //     let stop_date = new Date(req.body.stop_date + " 07:00")
+                //     filter.date_import = {
+                //         "$lte": stop_date,
+                //     }
+                // }
                 if (req.body.status) {
                     filter.status = req.body.status.trim();
                     let a = req.body.status;
@@ -461,6 +461,16 @@ module.exports = {
     },
     testgetMailByUser: async function(req, res){
         try{
+            let check = 0
+            let startDate = req.body.start_date + " 7:00"
+            let stopDate = req.body.stop_date + " 7:00"
+            let day_startDate = new Date(startDate)
+            let day_stopDate = new Date(stopDate)
+            console.log(day_startDate.getTime());
+            console.log(day_stopDate.getTime());
+            console.log(day_startDate.getTime() < day_stopDate.getTime());
+            // console.log(stopDate);
+            return
             var checkBody = ["type", "nation"];
             let token = req.body.token
             // let buyer = req.body.buyer
@@ -493,28 +503,24 @@ module.exports = {
                     filter.mail = new RegExp(req.body.mail.trim(), 'i');
                 }
                 if (req.body.start_date && req.body.stop_date) {
+                    let start_date = new Date(req.body.start_date + " 07:00")
+                    let stop_date = new Date(req.body.stop_date + " 07:00")
                     filter.date_import = {
-                        "$gte": req.body.start_date,
-                        "$lte": req.body.stop_date
+                        "$gte": start_date,
+                        "$lte": stop_date
                     }
-                    // let date = new Date();
-                    // console.log("date= " + date);
-                    // var d = new Date(date),
-                    //     month = '' + (d.getMonth() + 1),
-                    //     day = '' + d.getDate(),
-                    //     year = d.getFullYear();
-                    // let dateNow = year + "-" + month + "-" + day + " 00:00";
-                    // console.log("dateNow= " + dateNow);
-                    // let start_date = new Date(dateNow);
-                    // start_date.setDate(start_date.getDate() - req.body.start_date);
-                    // console.log("startDate= " + start_date);
-                    // let stop_date = new Date(dateNow);
-                    // stop_date.setDate(stop_date.getDate() - req.body.stop_date);
-                    // console.log("stopDate= " + stop_date);
-                    // filter.date_import = {
-                    //     "$gte": stop_date.toISOString(),
-                    //     "$lte": start_date.toISOString()
-                    // };
+                }
+                if(req.body.start_date){
+                    let start_date = new Date(req.body.start_date + " 07:00")
+                    filter.date_import = {
+                        "$gte": start_date,
+                    }
+                }
+                if(req.body.stop_date){
+                    let stop_date = new Date(req.body.stop_date + " 07:00")
+                    filter.date_import = {
+                        "$lte": stop_date,
+                    }
                 }
                 if (req.body.status) {
                     filter.status = req.body.status.trim();
