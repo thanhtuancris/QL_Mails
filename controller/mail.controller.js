@@ -293,7 +293,8 @@ module.exports = {
             }
         }catch(ex){
             res.status(400).json({
-                message: "Không có quyền thực thi!"
+                message: "Không có quyền thực thi!",
+                data: ex.message
             })
         }
         
@@ -579,4 +580,30 @@ module.exports = {
         }
         
     },
+    checkMails: async function (req, res) {
+        var checkBody = ["type", "nation"];
+        let checkUser = await Account.findOne({
+            token: req.body.token,
+            isdelete: false,
+            status: true,
+            role: 2
+        })
+        let filter = {
+            isdelete: false,
+            ischeck: false,
+        }
+        for(var k in req.body){
+            if(checkBody.indexOf(k) != -1 && req.body[k]){
+                filter[k] = new RegExp(req.body[k].trim(), 'i')
+            }
+        }
+        if (req.body.start_date && req.body.stop_date) {
+            let start_date = new Date(req.body.start_date + " 07:00")
+            let stop_date = new Date(req.body.stop_date + " 07:00")
+            filter.date_import = {
+                "$gte": start_date,
+                "$lte": stop_date
+            }
+        }
+    }
 }
