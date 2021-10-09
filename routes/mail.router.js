@@ -10,4 +10,5 @@ router.post('/mail/test', mailController.testgetMailByUser);
 router.post('/mail/edit-mail',middleware.editMail, mailController.editMail);
 router.post('/mail/delete-mail', mailController.deleteMail);
 router.post('/mail/delete-mails',middleware.deleteMails, mailController.deleteMails);
+router.post('/mail/check-mails', mailController.checkMails);
 module.exports = router;

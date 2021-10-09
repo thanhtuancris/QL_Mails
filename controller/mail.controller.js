@@ -591,6 +591,7 @@ module.exports = {
         let filter = {
             isdelete: false,
             ischeck: false,
+            buyer: checkUser._id
         }
         for(var k in req.body){
             if(checkBody.indexOf(k) != -1 && req.body[k]){
@@ -605,5 +606,24 @@ module.exports = {
                 "$lte": stop_date
             }
         }
+        const perPage = parseInt(req.body.limit);
+        const page = parseInt(req.body.page || 1);
+        const skip = (perPage * page) - perPage;
+        console.log(filter)
+        const result = await Mail.find(filter).skip(skip).limit(perPage);
+        const totalDocuments = await Mail.countDocuments(filter);
+        const totalPage = Math.ceil(totalDocuments / perPage);
+        res.status(200).json({
+            message: "Lấy dữ liệu thành công!",
+            data: result,
+            page: page,
+            totalDocuments: totalDocuments,
+            totalPage: totalPage,
+            // totalLive: totalLive,
+            // totalDisabled: totalDisabled,
+            // totalVerified: totalVerified,
+            // totalSale: totalSale,
+        
+        });
     }
 }
