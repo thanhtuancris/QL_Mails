@@ -4,6 +4,7 @@ let Cookies = require('../model/cookie')
 const sanitizer = require('sanitizer');
 const fs = require('fs');
 const puppeteer = require('puppeteer');
+let request = require('request');
 
 function validateEmail(email) {
     if (/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/.test(email)) {
@@ -438,12 +439,12 @@ module.exports = {
                 }
                 try {
                     let check_mail
-                    if(req.body.mail){
+                    if (req.body.mail) {
                         check_mail = await Mail.findOne({
                             mail: sanitizer.escape(req.body.mail.trim().split(/\s+/).join(''))
                         });
                     }
-                    
+
                     if (check_mail != null && check_mail._id != id_mail) {
                         res.status(400).json({
                             message: "Mail đã tồn tại trong hệ thống!"
@@ -703,15 +704,116 @@ module.exports = {
                 "$lte": stop_date
             }
         }
-        const perPage = parseInt(req.body.limit);
-        const page = parseInt(req.body.page || 1);
-        const skip = (perPage * page) - perPage;
-        console.log(filter)
-        const result = await Mail.find(filter).skip(skip).limit(perPage);
-        const totalDocuments = await Mail.countDocuments(filter);
-        const totalPage = Math.ceil(totalDocuments / perPage);
-        
-    },  
+        let totalcheck = (req.body.totalcheck) ? req.body.totalcheck : 1000;
+        let resultCheck = await Mail.find(filter).limit(parseInt(totalcheck));
+        res.status(200).json({
+            message: "Done",
+            data: resultCheck.length
+        });
+        if (checkUser) {
+            const perPage = 500;
+            let page = 1;
+            const totalPage = Math.ceil(totalcheck / perPage);
+            let cookies = await Cookies.findOne({
+                user: checkUser.username
+            });
+            for (let i = 0; i < totalPage; i++) {
+                let arrMail = [];
+                let skip = (perPage * page) - perPage;
+                let result = await Mail.find(filter).skip(skip).limit(perPage);
+                for (let j = 0; j < result.length; j++) {
+                    arrMail.push(result[j].mail.trim());
+                }
+                setTimeout(function () {
+                    const options = {
+                        uri: 'http://gmailchecker.info/Mail/check',
+                        headers: {
+                            'Host': "gmailchecker.info",
+                            'User-Agent': "Mozilla/5.0 (X11; Linux x86_64; rv:45.0) Gecko/20100101 Thunderbird/45.8.0",
+                            'Accept': "*/*",
+                            'Accept-Language': "en-GB,en;q=0.5",
+                            'Accept-Encoding': "gzip, deflate",
+                            'Referer': "http://gmailchecker.info/Mail",
+                            'Content-Type': "application/json",
+                            'X-XSRF-TOKEN': cookies.Xtoken.toString(),
+                            'X-Requested-With': "XMLHttpRequest",
+                            'Origin': "http://gmailchecker.info",
+                            'Connection': "keep-alive",
+                            'Cookie': cookies.cookie.toString(),
+                        },
+                        json: {
+                            "data": arrMail,
+                            "transactionId": 1
+                        }
+                    };
+                    request.post(options, async function (errs, ress, body) {
+                        if (errs) {
+                            console.log(errs);
+                        } else {
+                            try {
+                                let rsChecked = body.result.list;
+                                for (let y = 0; y < rsChecked.length; y++) {
+                                    let temp = kq[y].split("|");
+                                    let statusCheck = 1;
+                                    // if (temp[0] == "Good") {
+                                    //     statusCheck = 5;
+                                    // }
+                                    // if (temp[0] == "Ver") {
+                                    //     statusCheck = 10;
+                                    // }
+                                    // if (temp[0] == "Disable") {
+                                    //     statusCheck = 15;
+                                    // }
+                                    // if (temp[0] == "Not_Exist") {
+                                    //     statusCheck = 20;
+                                    // }
+                                    // if (temp[0] == "Unknown") {
+                                    //     statusCheck = 25;
+                                    // }
+                                    switch (temp[0]) {
+                                        case "Good":
+                                            statusCheck = 1;
+                                            break;
+                                        case "Disable":
+                                            statusCheck = 2;
+                                            break;
+                                        case "Ver":
+                                            statusCheck = 3;
+                                            break;
+                                        case "Not_Exist":
+                                            statusCheck = 4;
+                                            break;
+                                        case "Unknown":
+                                            statusCheck = 5;
+                                            break;
+
+                                    }
+                                    let update = await Mail.updateMany({
+                                        mail: temp[1]
+                                    }, {
+                                        status: statusCheck,
+                                        ischeck: true
+                                    })
+                                    if (update != null) {
+                                        console.log("done" + temp[1])
+                                        // let rs_find = await Mail.find({mail: temp[1]})
+                                        // console.log(rs_find);
+                                    } else {
+
+                                    }
+                                }
+                            } catch (rex) {}
+                        }
+                    });
+                }, 3000 * i);
+            }
+        } else {
+            res.status(400).json({
+                message: "Không có quyền thực thi!"
+            })
+        }
+
+    },
     getTypeMail: async function (req, res) {
         try {
             let check = await Account.findOne({
@@ -888,7 +990,7 @@ module.exports = {
                         let page = i + 1;
                         let skip = (perPage * page) - perPage;
                         let result = await Mail.find(filter).skip(skip).limit(perPage);
-                       
+
                         for (let j = 0; j < result.length; j++) {
                             //date import
                             let date = new Date(result[j].date_import);
@@ -905,12 +1007,12 @@ module.exports = {
                             //log Data
                             let logData = result[j].mail + '|' + result[j].password + '|' + result[j].mailRecovery + '|' + result[j].note + '|' + result[j].type + '|' + result[j].nation + '|' + result[j].status + '|' + date_import.toString() + '|' + date_edit.toString();
                             arrData.push(logData)
-                            if(j+1 == result.length){
+                            if (j + 1 == result.length) {
                                 res.status(200).json({
                                     message: "Xuất dữ liệu thành công!",
                                     filename: filename,
                                     data: arrData,
-                                    
+
                                 })
                             }
                         }
@@ -928,7 +1030,7 @@ module.exports = {
         }
     },
     editMails: async function (req, res) {
-        try{
+        try {
             let check = await Account.findOne({
                 token: req.body.token,
                 isdelete: false,
@@ -966,7 +1068,7 @@ module.exports = {
                 let rs = await Mail.find(filter);
                 let update = {
                     type: (req.body.typeEdit) ? req.body.typeEdit : rs.type,
-                    nation: (req.body.nationEdit) ? req.body.nationEdit: rs.nation,
+                    nation: (req.body.nationEdit) ? req.body.nationEdit : rs.nation,
                     note: (req.body.noteEdit) ? req.body.noteEdit : rs.note,
                 }
                 Mail.updateMany(filter, update, (ers, ress) => {
@@ -980,13 +1082,13 @@ module.exports = {
                         });
                     }
                 });
-            }else{
+            } else {
                 res.status(400).json({
                     message: "Không có quyền thực thi!"
                 })
             }
-           
-        }catch (ex) {
+
+        } catch (ex) {
             res.status(401).json({
                 message: ex.message
             });
