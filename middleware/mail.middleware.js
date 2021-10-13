@@ -1,8 +1,14 @@
+function validateEmail(email) {
+    if (/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/.test(email)) {
+        return (true)
+    }
+    return (false)
+}
 module.exports = {
     editMail: function (req, res, next) {
         if (!req.body.token) {
             res.status(400).json({
-                message: "Thiếu trường dữ liệu token"
+                message: "Hết phiên đăng nhập"
             });
             return;
         }
@@ -12,12 +18,21 @@ module.exports = {
             });
             return;
         }
+        if(req.body.mail){
+            let mail = req.body.mail
+            if(validateEmail(mail) == false){
+                res.status(400).json({
+                    message: "Sai định dạng mail!"
+                });
+                return;
+            }
+        }
         next();
     },
     getMail: function (req, res, next) {
         if (!req.body.token) {
             res.status(400).json({
-                message: "Thiếu trường dữ liệu token"
+                message: "Hết phiên đăng nhập"
             });
             return;
         }
@@ -39,7 +54,7 @@ module.exports = {
     deleteMails: function (req, res, next) {
         if (!req.body.token) {
             res.status(400).json({
-                message: "Thiếu trường dữ liệu token"
+                message: "Hết phiên đăng nhập"
             });
             return;
         }

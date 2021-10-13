@@ -23,10 +23,8 @@ module.exports = {
         if (check) {
             try {
                 let arr = req.body.mail;
-                // res.status(200).json({
-                //     message: 'success',
-                //     data: arr.length
-                // });
+                let countDone = 0;
+                let countFail = 0;
                 for (let i = 0; i < arr.length; i++) {
                     let arrMail = arr[i].split("|");
                     if (arrMail[0] && arrMail[1] && arrMail[2]) {
@@ -54,6 +52,7 @@ module.exports = {
                                     ischeck: false,
                                 });
                                 let importMail = await newMails.save();
+                                countDone++
                                 if (i + 1 == arr.length) {
                                     return res.status(200).json({
                                         message: 'Thêm mail thành công!',
@@ -415,10 +414,10 @@ module.exports = {
                 isdelete: false,
                 role: 2
             });
-            let checkBody = ["type", "nation", "mail", "password", "mailRecovery"];
+            let checkBody = ["type", "nation", "mail", "password", "mailRecovery", "note", "status"];
             let update = {
                 date_edit: new Date(),
-                user: checkUser._id
+                edit_by: checkUser._id
             };
             // let date = req.body.date_import + " 00:00";
             let id_mail = req.body.id_mail;
@@ -438,12 +437,16 @@ module.exports = {
                     }
                 }
                 try {
-                    let check_mail = await Mail.findOne({
-                        mail: sanitizer.escape(req.body.mail.trim().split(/\s+/).join(''))
-                    });
+                    let check_mail
+                    if(req.body.mail){
+                        check_mail = await Mail.findOne({
+                            mail: sanitizer.escape(req.body.mail.trim().split(/\s+/).join(''))
+                        });
+                    }
+                    
                     if (check_mail != null && check_mail._id != id_mail) {
                         res.status(400).json({
-                            message: "Mail đã tồn tại trong hệ thống"
+                            message: "Mail đã tồn tại trong hệ thống!"
                         })
                     } else {
                         Mail.findOneAndUpdate({
@@ -462,7 +465,7 @@ module.exports = {
                     }
                 } catch (ex) {
                     res.status(401).json({
-                        message: "Lỗi định dạng email, vui lòng thử lại"
+                        message: ex.message
                     });
                 }
             } else {
@@ -707,19 +710,8 @@ module.exports = {
         const result = await Mail.find(filter).skip(skip).limit(perPage);
         const totalDocuments = await Mail.countDocuments(filter);
         const totalPage = Math.ceil(totalDocuments / perPage);
-        res.status(200).json({
-            message: "Lấy dữ liệu thành công!",
-            data: result,
-            page: page,
-            totalDocuments: totalDocuments,
-            totalPage: totalPage,
-            // totalLive: totalLive,
-            // totalDisabled: totalDisabled,
-            // totalVerified: totalVerified,
-            // totalSale: totalSale,
-        });
-
-    },
+        
+    },  
     getTypeMail: async function (req, res) {
         try {
             let check = await Account.findOne({
@@ -876,7 +868,7 @@ module.exports = {
             if (check) {
                 let filter = {
                     isdelete: false,
-                    import_by: check._id
+                    user: check._id
                 };
                 var d = new Date(),
                     month = '' + (d.getMonth() + 1),
@@ -884,6 +876,7 @@ module.exports = {
                     year = d.getFullYear();
                 let filename = "File Export (" + year + "-" + month + "-" + day + ").txt";
                 let perPage = 100;
+                let arrData = []
                 const totalDocuments = await Mail.countDocuments(filter);
                 const totalPage = Math.ceil(totalDocuments / perPage);
                 if (totalPage == 0) {
@@ -895,43 +888,33 @@ module.exports = {
                         let page = i + 1;
                         let skip = (perPage * page) - perPage;
                         let result = await Mail.find(filter).skip(skip).limit(perPage);
+                       
                         for (let j = 0; j < result.length; j++) {
-                            setTimeout(function () {
-                                //date import
-                                let date = new Date(result[j].date_import);
-                                let year = date.getFullYear();
-                                let month = date.getMonth() + 1;
-                                let dt = date.getDate();
-                                let date_import = year + '-' + month + '-' + dt;
-                                //date edit
-                                let date1 = new Date(result[j].date_edit);
-                                let year1 = date1.getFullYear();
-                                let month1 = date1.getMonth() + 1;
-                                let dt1 = date1.getDate();
-                                let date_edit = year1 + '-' + month1 + '-' + dt1;
-                                //log Data
-                                let logData = result[j].mail + '|' + result[j].password + '|' + result[j].mailRecovery + '|' + result[j].note + '|' + result[j].type + '|' + result[j].nation + '|' + result[j].status + '|' + result[j].import_by + '|' + date_import.toString() + '|' + date_edit.toString() + '|' + "\n";
-                                fs.appendFileSync(filename, logData, function (err) {
-                                    if (err) throw err;
-                                });
-                            }, 100*j)
+                            //date import
+                            let date = new Date(result[j].date_import);
+                            let year = date.getFullYear();
+                            let month = date.getMonth() + 1;
+                            let dt = date.getDate();
+                            let date_import = year + '-' + month + '-' + dt;
+                            //date edit
+                            let date1 = new Date(result[j].date_edit);
+                            let year1 = date1.getFullYear();
+                            let month1 = date1.getMonth() + 1;
+                            let dt1 = date1.getDate();
+                            let date_edit = year1 + '-' + month1 + '-' + dt1;
+                            //log Data
+                            let logData = result[j].mail + '|' + result[j].password + '|' + result[j].mailRecovery + '|' + result[j].note + '|' + result[j].type + '|' + result[j].nation + '|' + result[j].status + '|' + date_import.toString() + '|' + date_edit.toString();
+                            arrData.push(logData)
+                            if(j+1 == result.length){
+                                res.status(200).json({
+                                    message: "Xuất dữ liệu thành công!",
+                                    filename: filename,
+                                    data: arrData,
+                                    
+                                })
+                            }
                         }
                     }
-                    setTimeout(function(){
-                        fs.readFileSync(filename, "utf8", function(err,data){
-                            if(err) throw err;
-                            res.status(200).json({
-                                message: "Xuất dữ liệu thành công!",
-                                data: data
-                            })
-                        })
-                    },4500)
-                    // setTimeout(function () {
-                    //     fs.unlink(filename, function (err) {
-                    //         if (err) throw err;
-                    //         console.log('File deleted!');
-                    //     });
-                    // },5000)
                 }
             } else {
                 res.status(400).json({
@@ -942,6 +925,71 @@ module.exports = {
             res.status(400).json({
                 message: ex.message,
             })
+        }
+    },
+    editMails: async function (req, res) {
+        try{
+            let check = await Account.findOne({
+                token: req.body.token,
+                isdelete: false,
+                status: true,
+                role: 2
+            })
+            var checkBody = ["type", "nation", "note"];
+            let filter = {
+                isdelete: false,
+                user: check._id
+            };
+            for (var k in req.body) {
+                if (checkBody.indexOf(k) != -1 && req.body[k]) {
+                    filter[k] = new RegExp(req.body[k].trim(), 'i')
+                }
+            }
+            if (req.body.ischeck) {
+                filter.ischeck = req.body.ischeck;
+            }
+            if (req.body.mail) {
+                filter.mail = new RegExp(req.body.mail.trim(), 'i');
+            }
+            if (req.body.status) {
+                filter.status = req.body.status.trim();
+            }
+            if (req.body.start_date && req.body.stop_date) {
+                let start_date = new Date(req.body.start_date + " 07:00")
+                let stop_date = new Date(req.body.stop_date + " 07:00")
+                filter.date_import = {
+                    "$gte": start_date,
+                    "$lte": stop_date
+                }
+            }
+            if (check) {
+                let rs = await Mail.find(filter);
+                let update = {
+                    type: (req.body.typeEdit) ? req.body.typeEdit : rs.type,
+                    nation: (req.body.nationEdit) ? req.body.nationEdit: rs.nation,
+                    note: (req.body.noteEdit) ? req.body.noteEdit : rs.note,
+                }
+                Mail.updateMany(filter, update, (ers, ress) => {
+                    if (ress) {
+                        res.status(200).json({
+                            message: "Cập nhật thành công!"
+                        });
+                    } else {
+                        res.status(400).json({
+                            message: "Cập nhật thất bại!"
+                        });
+                    }
+                });
+            }else{
+                res.status(400).json({
+                    message: "Không có quyền thực thi!"
+                })
+            }
+           
+        }catch (ex) {
+            res.status(401).json({
+                message: ex.message
+            });
         }
     }
 }
