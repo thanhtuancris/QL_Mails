@@ -96,33 +96,40 @@ module.exports = {
         }
     },
     deleteNation: async function (req, res){
-        let check = await Account.findOne({
-            token: req.body.token,
-            isdelete: false,
-            status: true,
-            role: 2
-        })
-        if(check){
-            let filter = {
-                _id: req.body.id_Nation,
-                isdelete: false
-            }
-            let update = {
-                isdelete: true,
-            }
-            let updateNation = await Nation.findOneAndUpdate(filter, update, {new: true})
-            if(updateNation){
-                res.status(200).json({
-                    message: 'Xóa quốc gia thành công!',
-                });
+        try{
+            let check = await Account.findOne({
+                token: req.body.token,
+                isdelete: false,
+                status: true,
+                role: 2
+            })
+            let arr = req.body.id_Nation;
+                // arr = JSON.parse(arr);
+            if(check){
+                for(let i = 0; i < arr.length; i++){
+                    let filter = {
+                        _id: arr[i],
+                        isdelete: false
+                    }
+                    let update = {
+                        isdelete: true,
+                    }
+                    let updateNation = await Nation.findOneAndUpdate(filter, update, {new: true})
+                    if (i + 1 == arr.length) {
+                        res.status(200).json({
+                            message: "Xóa quốc gia thành công!",
+                        });
+                    }
+                }
+                
             }else{
                 res.status(400).json({
-                    message: 'Xóa quốc gia thất bại!',
+                    message: 'Không có quyền thực thi!',
                 });
             }
-        }else{
+        }catch(e){
             res.status(400).json({
-                message: 'Không có quyền thực thi!',
+                message: e.message,
             });
         }
     },

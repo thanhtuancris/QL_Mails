@@ -97,33 +97,40 @@ module.exports = {
         }
     },
     deleteType: async function (req, res){
-        let check = await Account.findOne({
-            token: req.body.token,
-            isdelete: false,
-            status: true,
-            role: 2
-        })
-        if(check){
-            let filter = {
-                _id: req.body.id_Type,
-                isdelete: false
-            }
-            let update = {
-                isdelete: true,
-            }
-            let updateType = await Type.findOneAndUpdate(filter, update, {new: true})
-            if(updateType){
-                res.status(200).json({
-                    message: 'Xóa thể loại thành công!',
-                });
+        try{
+            let check = await Account.findOne({
+                token: req.body.token,
+                isdelete: false,
+                status: true,
+                role: 2
+            })
+            let arr = req.body.id_Type;
+                // arr = JSON.parse(arr);
+            if(check){
+                for(let i = 0; i < arr.length; i++){
+                    let filter = {
+                        _id: arr[i],
+                        isdelete: false
+                    }
+                    let update = {
+                        isdelete: true,
+                    }
+                    let updateType = await Type.findOneAndUpdate(filter, update, {new: true})
+                    if (i + 1 == arr.length) {
+                        res.status(200).json({
+                            message: "Xóa thể loại thành công!",
+                        });
+                    }
+                }
+                
             }else{
                 res.status(400).json({
-                    message: 'Xóa thể loại thất bại!',
+                    message: 'Không có quyền thực thi!',
                 });
             }
-        }else{
+        }catch(e){
             res.status(400).json({
-                message: 'Không có quyền thực thi!',
+                message: e.message,
             });
         }
     },
