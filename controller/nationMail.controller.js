@@ -114,7 +114,7 @@ module.exports = {
                     let update = {
                         isdelete: true,
                     }
-                    let updateNation = await Nation.findOneAndUpdate(filter, update, {new: true})
+                    let deleteNation = await Nation.findOneAndDelete(filter)
                     if (i + 1 == arr.length) {
                         res.status(200).json({
                             message: "Xóa quốc gia thành công!",

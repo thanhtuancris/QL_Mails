@@ -55,23 +55,17 @@ module.exports = {
                                     });
                                 }
                             } else {
-                                return res.status(404).json({
+                                return res.status(400).json({
                                     message: 'Sai định dạng mail!',
                                 });
                             }
                         } else {
-                            // let mailExist = arrMail[0] + "|" + arrMail[1] + "|" + arrMail[3]
                             let mail = (arrMail[0]) ? arrMail[0] : "null";
                             let password = (arrMail[1]) ? arrMail[1] : "null";
                             let recovered = (arrMail[2]) ? arrMail[2] : "null";
                             let note = (arrMail[3]) ? arrMail[3] : "null";
-                            let mailExist = mail + "|" + password + "|" + recovered + "|" + note
+                            let mailExist = mail + "|" + password + "|" + recovered + "|" + note + "|" + "Trùng Mail"
                             arrExist.push(mailExist) 
-                            // let logs = mail + " | " + password + " | " + recovered + " | " + note + " | " + check.username + "|" + " Đã tồn tại Mail " + "\n";
-                            // fs.appendFile('logs.txt', logs, function (err) {
-                            //     if (err) throw err;
-                            //     console.log('Export log done!');
-                            // });
                             if (i + 1 == arr.length) {
                                 res.status(400).json({
                                     message: 'Mail bị trùng, Hãy thử lại!',
@@ -290,6 +284,10 @@ module.exports = {
                     filter.status = 3;
                     totalVerified = await Mail.countDocuments(filter);
                     filter.status = 4;
+                    totalNotExist = await Mail.countDocuments(filter);
+                    filter.status = 5;
+                    totalUnknown = await Mail.countDocuments(filter);
+                    filter.status = 6;
                     totalSale = await Mail.countDocuments(filter);
                 }
                 res.status(200).json({
@@ -301,6 +299,8 @@ module.exports = {
                     totalLive: totalLive,
                     totalDisabled: totalDisabled,
                     totalVerified: totalVerified,
+                    totalNotExist: totalNotExist,
+                    totalUnknown: totalUnknown,
                     totalSale: totalSale,
 
                 });
@@ -492,6 +492,19 @@ module.exports = {
         }
     },
     testgetMailByUser: async function (req, res) {
+        let filter = {
+            ischeck: true
+        }
+        let update = {
+            ischeck: false
+        }
+        let updateStatus = await Mail.updateMany(filter, update)
+        if(updateStatus){
+            res.status(200).json({
+                message: 'done'
+            })
+        }
+        return
         try {
             let check = 0
             let startDate = req.body.start_date + " 7:00"
@@ -713,32 +726,29 @@ module.exports = {
             status: true,
             role: 2
         })
-        let filter = {
-            isdelete: false,
-            ischeck: false,
-            user: checkUser._id
-        }
-        for (var k in req.body) {
-            if (checkBody.indexOf(k) != -1 && req.body[k]) {
-                filter[k] = new RegExp(req.body[k].trim(), 'i')
-            }
-        }
-        if(req.body.start_date){
-            let start_date = new Date(req.body.start_date + " 07:00")
-            let stop_date = new Date(req.body.start_date + " 07:00")
-            stop_date.setDate(start_date.getDate() + 1)
-            filter.date_import = {
-                "$gte": start_date,
-                "$lt": stop_date
-            }
-        }
-        let totalcheck = 1000;
-        let resultCheck = await Mail.find(filter).limit(parseInt(totalcheck));
-        // res.status(200).json({
-        //     message: "Done",
-        //     data: resultCheck.length
-        // });
         if (checkUser) {
+            let filter = {
+                isdelete: false,
+                ischeck: false,
+                user: checkUser._id
+            }
+            for (var k in req.body) {
+                if (checkBody.indexOf(k) != -1 && req.body[k]) {
+                    filter[k] = new RegExp(req.body[k].trim(), 'i')
+                }
+            }
+            if(req.body.start_date){
+                let start_date = new Date(req.body.start_date + " 07:00")
+                let stop_date = new Date(req.body.start_date + " 07:00")
+                stop_date.setDate(start_date.getDate() + 1)
+                filter.date_import = {
+                    "$gte": start_date,
+                    "$lt": stop_date
+                }
+            }
+            let totalcheck = 10000;
+            let resultCheck = await Mail.find(filter).limit(parseInt(totalcheck));
+
             let checkCookiesExist = await Cookies.findOne({
                 user: checkUser.username
             });
@@ -756,15 +766,14 @@ module.exports = {
                 user: checkUser.username
             });
             if(cookies){
-                 // console.log("Tài khoản đã có cookie. Đang check mail rồi chờ tí nhé!");
-                 for (let i = 0; i < totalPage; i++) {
+                //  for (let i = 0; i < totalPage; i++) {
                     let arrMail = [];
-                    let skip = (perPage * page) - perPage;
-                    let result = await Mail.find(filter).skip(skip).limit(perPage);
+                    // let skip = (perPage * page) - perPage;
+                    let result = await Mail.find(filter)
                     for (let j = 0; j < result.length; j++) {
                         arrMail.push(result[j].mail.trim());
                     }
-                    setTimeout(function () {
+                    // setTimeout(function () {
                         const options = {
                             method: 'POST',
                             url: 'http://gmailchecker.info/Mail/check',
@@ -794,58 +803,53 @@ module.exports = {
                                 try {
                                     let rsChecked = body.result.list;
                                     for (let y = 0; y < rsChecked.length; y++) {
-                                        let temp = rsChecked[y].split("|");
-                                        let statusCheck = 1;
-                                        switch (temp[0]) {
-                                            case "Good":
-                                                statusCheck = 1;
-                                                break;
-                                            case "Disable":
-                                                statusCheck = 2;
-                                                break;
-                                            case "Ver":
-                                                statusCheck = 3;
-                                                break;
-                                            case "Not_Exist":
-                                                statusCheck = 4;
-                                                break;
-                                            default:
-                                                statusCheck = 5;
-                                        }
-                                        let update = await Mail.updateMany({
-                                            mail: temp[1]
-                                        }, {
-                                            status: statusCheck,
-                                            ischeck: true
-                                        })
-                                        if (update !== null) {
-                                            console.log("UPDATE STATUS SUCCESS: " + temp[1] + "|" + temp[0])
-                                            // let rs_find = await Mail.find({mail: temp[1]})
-                                            // console.log(rs_find);
-                                        } else {
-                                            console.log("UPDATE STATUS FAIL " + temp[1])
-                                        }
-                                        // if(y+1 == rsChecked.length){
-                                        //     console.log("CHECK MAIL DONE");
-                                        //     res.status(200).json({
-                                        //         message: "Check mail thành công!"
-                                        //     })
-                                        // }
+                                        setTimeout(async function () {
+                                            let temp = rsChecked[y].split("|");
+                                            let statusCheck = 1;
+                                            switch (temp[0]) {
+                                                case "Good":
+                                                    statusCheck = 1;
+                                                    break;
+                                                case "Disable":
+                                                    statusCheck = 2;
+                                                    break;
+                                                case "Ver":
+                                                    statusCheck = 3;
+                                                    break;
+                                                case "Not_Exist":
+                                                    statusCheck = 4;
+                                                    break;
+                                                default:
+                                                    statusCheck = 5;
+                                            }
+                                            let update = await Mail.updateMany({
+                                                mail: temp[1]
+                                            }, {
+                                                status: statusCheck,
+                                                ischeck: true
+                                            })
+                                            if (update !== null) {
+                                                console.log("UPDATE STATUS SUCCESS: " + temp[1] + "|" + temp[0])
+                                            } else {
+                                                console.log("UPDATE STATUS FAIL " + temp[1])
+                                            }
+                                            if(y+1 == rsChecked.length){
+                                                // console.log("y = " + y);
+                                                console.log("CHECK MAIL DONE");
+                                                res.status(200).json({
+                                                    message: "Check mail thành công!"
+                                                })
+                                            }
+                                        }, 3000*y)
                                     }
                                 } catch (rex) {
                                     console.log(rex);
                                 }
                             }
                         });
-                    }, 3000 * i);
-                    page++;
-                    if(i+1 == totalPage){
-                        console.log("CHECK MAIL DONE");
-                        res.status(200).json({
-                            message: "Check mail thành công!"
-                        })
-                    }
-                }
+                    // }, 3500);
+                    // page++;
+                // }
             }else{
                 res.status(400).json({
                     message: "Chưa có tài khoản checkmail!"
@@ -1051,14 +1055,13 @@ module.exports = {
                             //log Data
                             let logData = result[j].mail + '|' + result[j].password + '|' + result[j].mailRecovery + '|' + result[j].note + '|' + result[j].type + '|' + result[j].nation + '|' + result[j].status + '|' + date_import.toString() + '|' + date_edit.toString();
                             arrData.push(logData)
-                            if (j + 1 == result.length) {
-                                res.status(200).json({
-                                    message: "Xuất dữ liệu thành công!",
-                                    filename: filename,
-                                    data: arrData,
-
-                                })
-                            }
+                        }
+                        if (i + 1 == totalPage) {
+                            res.status(200).json({
+                                message: "Xuất dữ liệu thành công!",
+                                filename: filename,
+                                data: arrData,
+                            })
                         }
                     }
                 }

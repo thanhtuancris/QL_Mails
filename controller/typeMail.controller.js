@@ -115,7 +115,7 @@ module.exports = {
                     let update = {
                         isdelete: true,
                     }
-                    let updateType = await Type.findOneAndUpdate(filter, update, {new: true})
+                    let deleteType = await Type.findOneAndDelete(filter)
                     if (i + 1 == arr.length) {
                         res.status(200).json({
                             message: "Xóa thể loại thành công!",

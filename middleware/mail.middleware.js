@@ -66,4 +66,64 @@ module.exports = {
         }
         next();
     },
+    addMails: function (req, res, next) {
+        if (!req.body.token) {
+            res.status(400).json({
+                message: "Hết phiên đăng nhập!"
+            });
+            return;
+        }
+        if (!req.body.mail) {
+            res.status(400).json({
+                message: "Thiếu dữ liệu đầu vào vui lòng thử lại"
+            });
+            return;
+        }
+        if (!req.body.type) {
+            res.status(400).json({
+                message: "Thiếu dữ liệu đầu vào vui lòng thử lại"
+            });
+            return;
+        }
+        if (!req.body.nation) {
+            res.status(400).json({
+                message: "Thiếu dữ liệu đầu vào vui lòng thử lại"
+            });
+            return;
+        }
+        next();
+    },
+    checkMails: function (req, res, next) {
+        if (!req.body.token) {
+            res.status(400).json({
+                message: "Hết phiên đăng nhập"
+            });
+            return;
+        }
+        next();
+    },
+    deleteMail: function (req, res, next) {
+        if (!req.body.token) {
+            res.status(400).json({
+                message: "Hết phiên đăng nhập!"
+            });
+            return;
+        }
+        if (!req.body.id_mail) {
+            res.status(400).json({
+                message: "Thiếu trường dữ liệu!"
+            });
+            return;
+        }
+        next();
+    },
+    editMails: function (req, res, next) {
+        if (!req.body.token) {
+            res.status(400).json({
+                message: "Hết phiên đăng nhập"
+            });
+            return;
+        }
+        next();
+    },
 }
