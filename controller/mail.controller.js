@@ -20,6 +20,7 @@ module.exports = {
         if (check) {
             try {
                 let arrExist = []
+                let arrFailed = []
                 let arr = req.body.mail;
                 for (let i = 0; i < arr.length; i++) {
                     let arrMail = arr[i].split("|");
@@ -55,9 +56,20 @@ module.exports = {
                                     });
                                 }
                             } else {
-                                return res.status(400).json({
-                                    message: 'Sai định dạng mail!',
-                                });
+                                let mail = (arrMail[0]) ? arrMail[0] : "null";
+                                let password = (arrMail[1]) ? arrMail[1] : "null";
+                                let recovered = (arrMail[2]) ? arrMail[2] : "null";
+                                let note = (arrMail[3]) ? arrMail[3] : "null";
+                                let mailFailed = mail + "|" + password + "|" + recovered + "|" + note + "|" + "Sai định dạng Mail"
+                                arrFailed.push(mailFailed)
+                                if (i + 1 == arr.length) {
+                                    res.status(400).json({
+                                        message: `Sai định dạng mail!`,
+                                        data: arrFailed,
+                                        failed: arrFailed.length,
+                                        success: arr.length - arrFailed.length
+                                    });
+                                }
                             }
                         } else {
                             let mail = (arrMail[0]) ? arrMail[0] : "null";
@@ -69,7 +81,9 @@ module.exports = {
                             if (i + 1 == arr.length) {
                                 res.status(400).json({
                                     message: 'Mail bị trùng, Hãy thử lại!',
-                                    data: arrExist
+                                    data: arrExist,
+                                    failed: arrExist.length,
+                                    success: arr.length - arrExist.length
                                 });
                             }
                         }

@@ -12,6 +12,7 @@ module.exports = {
         })
         let newType = new Type({
             name: req.body.name.trim(),
+            price: req.body.price.trim(),
             date: new Date(),
             isdelete: false,
         })
@@ -78,7 +79,8 @@ module.exports = {
             }
             let findType = await Type.findOne(filter)
             let update = {
-                name: req.body.name ? req.body.name.trim(): findType.name
+                name: req.body.name ? req.body.name.trim(): findType.name,
+                price: req.body.price ? req.body.price.trim(): findType.price
             }
             let updateType = await Type.findOneAndUpdate(filter, update, {new: true})
             if(updateType){

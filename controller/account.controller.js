@@ -4,8 +4,8 @@ const jwt = require('jsonwebtoken');
 let Account = require('../model/account')
 module.exports = {
     login: async (req, res) => {
-        let username = req.body.username;
-        let password = req.body.password;
+        let username = req.body.username.trim();
+        let password = req.body.password.trim();
         let account = {
             username: username,
             password: md5(password)
@@ -74,54 +74,51 @@ module.exports = {
     },
     changePassword: async (req, res) => {
         let check = await Account.findOne({
-            token: req.body.token
+            token: req.body.token,
+            isdelete: false,
+            status: true,
+            $or: [{role:1}, {role:2}]
         });
         try {
-            if (check.username) {
+            if (check) {
                 let username = check.username;
-                let password = req.body.password;
-                let newpassword = req.body.newpassword;
-                try {
-                    let newToken = jwt.sign({
-                        username: username,
-                        password: md5(newpassword)
-                    }, fs.readFileSync('primary.key'));
-                    let filter = {
-                        username: username,
-                        password: md5(password)
-                    }
-                    let update = {
-                        token: newToken,
-                        date_edit: Date.now(),
-                        // modified_by: check._id,
-                        password: md5(newpassword),
-                    }
-                    let result1 = await Account.findOneAndUpdate(filter, update, {
-                        new: true
+                let password = req.body.password.trim();
+                let newpassword = req.body.newpassword.trim();
+                let newToken = jwt.sign({
+                    username: username,
+                    password: md5(newpassword)
+                }, fs.readFileSync('primary.key'));
+                let filter = {
+                    username: username,
+                    password: md5(password)
+                }
+                let update = {
+                    token: newToken,
+                    date_edit:new Date(),
+                    password: md5(newpassword),
+                }
+                let result1 = await Account.findOneAndUpdate(filter, update, {
+                    new: true
+                });
+                if (result1 != null) {
+                    // result1.token = newToken;
+                    res.status(200).json({
+                        message: "Đổi mật khẩu thành công!",
                     });
-                    if (result1 != null) {
-                        result1.token = newToken;
-                        res.status(200).json({
-                            message: "Thay đổi mật khẩu thành công!",
-                        });
-                    } else {
-                        res.status(400).json({
-                            message: "Mật khẩu cũ sai, vui lòng thử lại"
-                        });
-                    }
-                } catch (ex) {
+                } else {
                     res.status(400).json({
                         message: "Mật khẩu cũ sai, vui lòng thử lại"
                     });
                 }
+                
             } else {
                 res.status(401).json({
-                    message: "Token lỗi, vui lòng thử lại"
+                    message: "Không có quyền thực thi!"
                 });
             }
         } catch (ex) {
             res.status(401).json({
-                message: "Token lỗi, vui lòng thử lại"
+                message: ex.message,
             });
         }
     },
