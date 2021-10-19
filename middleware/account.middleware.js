@@ -1,3 +1,9 @@
+function validateEmail(email) {
+    if (/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/.test(email)) {
+        return (true)
+    }
+    return (false)
+}
 module.exports = {
     login: function(req, res, next) {
         if(!req.body.username){
@@ -53,6 +59,22 @@ module.exports = {
             return;
         }
         next();
+    },
+    updateInfo: function (req, res, next) {
+        if (!req.body.token) {
+            res.status(400).json({
+                message: "Hết phiên đăng nhập"
+            });
+            return;
+        }
+        if(req.body.email){
+            if(validateEmail(req.body.email) == false) {
+                res.status(400).json({
+                    message: "Sai định dạng mail!"
+                })
+                return
+            }
+        }
+        next();
     }
-   
 }

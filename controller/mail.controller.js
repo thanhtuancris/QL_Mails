@@ -73,6 +73,10 @@ module.exports = {
                                 });
                             }
                         }
+                    }else{
+                        res.status(400).json({
+                            message: 'Thiếu dữ liệu đầu vào!',
+                        });
                     }
                 }
             } catch (ex) {
@@ -1053,7 +1057,7 @@ module.exports = {
                             let dt1 = date1.getDate();
                             let date_edit = year1 + '-' + month1 + '-' + dt1;
                             //log Data
-                            let logData = result[j].mail + '|' + result[j].password + '|' + result[j].mailRecovery + '|' + result[j].note + '|' + result[j].type + '|' + result[j].nation + '|' + result[j].status + '|' + date_import.toString() + '|' + date_edit.toString();
+                            let logData = result[j].mail + '|' + result[j].password + '|' + result[j].mailRecovery + '|' + result[j].note + '|' + result[j].type + '|' + result[j].nation + '|' + result[j].status + '|' + date_import.toString() + '|' + date_edit.toString() + '|' + check.full_name;
                             arrData.push(logData)
                         }
                         if (i + 1 == totalPage) {

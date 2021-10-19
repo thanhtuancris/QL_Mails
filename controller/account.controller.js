@@ -151,5 +151,88 @@ module.exports = {
             })
         }
         
+    },
+    getInfo: async function (req, res) {
+        let token = req.body.token;
+        let filterAccount = {
+            token: token,
+            isdelete: false,
+            status: true,
+            $or: [{role:1}, {role:2}]
+        }
+        let check = await Account.findOne(filterAccount)
+        if(check){
+            let getInfo = await Account.findOne({_id: check._id})
+            if(getInfo){
+                let rs_info = {
+                    username: getInfo.username,
+                    full_name: getInfo.full_name,
+                    email: getInfo.email,
+                    birth_day: getInfo.birth_day,
+                    phone: getInfo.phone,
+                    team: getInfo.team,
+                    role: getInfo.role,
+                    status: getInfo.status,
+                    date_reg: getInfo.date_reg,
+                    date_edit: getInfo.date_edit
+                }
+                res.status(200).json({
+                    message: "Lấy dữ liệu thành công!",
+                    data: rs_info
+                })
+            }else{
+                res.status(400).json({
+                    message: "Lấy dữ liệu thất bại!"
+                })
+            }
+            
+        }else{
+            res.status(400).json({
+                message: "Không có quyền thực thi!"
+            })
+        }
+    }, 
+    updateInfo: async function(req, res){
+        try{
+            let token = req.body.token;
+            let filterAccount = {
+                token: token,
+                isdelete: false,
+                status: true,
+                $or: [{role:1}, {role:2}]
+            }
+            let check = await Account.findOne(filterAccount)
+            if(check){
+                let filter = {
+                    _id: check._id,
+                }
+                let update = {
+                    email: req.body.email ? req.body.email.trim() : check.email,
+                    full_name: req.body.full_name ? req.body.full_name.trim() : check.full_name,
+                    birth_day: req.body.birth_day ? req.body.birth_day.trim() : check.birth_day,
+                    phone: req.body.phone ? req.body.phone.trim() : check.phone,
+                }
+                let rsUpdate = await Account.findOneAndUpdate(filter, update, {new: true})
+                if(rsUpdate){
+                    res.status(200).json({
+                        message: "Cập nhật thành công!"
+                    })
+                }else{
+                    res.status(400).json({
+                        message: "Cập nhật thất bại!"
+                    })
+                }
+
+            }else{
+                res.status(400).json({
+                    message: "Không có quyền thực thi!"
+                })
+            }
+        }catch(e){
+            res.status(400).json({
+                message: e.message
+            })
+        }
+        
     }
 }
