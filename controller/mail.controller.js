@@ -391,7 +391,6 @@ module.exports = {
                     user: check._id
                 })
                 if (check._id.toString() === findUser[0].import_by.toString()) {
-                    // let arrMail = [];
                     for (let i = 0; i < arr.length; i++) {
                         let update = {
                             isdelete: true,
@@ -399,14 +398,13 @@ module.exports = {
                         try {
                             let filter = {
                                 _id: arr[i],
-                                import_by: check._id
+                                import_by: check._id,
+                                isdelete: false,
                             }
                             let result = await Mail.findOneAndUpdate(filter, update, {
                                 new: true
                             });
-                            // if (result != null) {
-                            //     arrMail.push(result);
-                            // }
+                            
                         } catch (ex) {
                             res.status(400).json({
                                 message: "day ne1" + ex.message,
